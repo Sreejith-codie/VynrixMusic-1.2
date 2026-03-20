@@ -1,17 +1,24 @@
-import { Search as SearchIcon, TrendingUp, Clock, Grid, Play } from "lucide-react";
+import { Search as SearchIcon, TrendingUp, Clock, Grid, Play, ListPlus } from "lucide-react";
 import { motion } from "motion/react";
 import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { searchMusic } from "@/src/lib/api";
+import { usePlayer } from "../App";
 
 export function Search() {
   const [query, setQuery] = useState("");
+  const { setCurrentTrack, setIsPlaying, addToQueue } = usePlayer();
   
   const { data: searchResults, isLoading } = useQuery({
     queryKey: ["search", query],
     queryFn: () => searchMusic(query),
     enabled: query.length > 0,
   });
+
+  const handlePlay = (track: any) => {
+    setCurrentTrack(track);
+    setIsPlaying(true);
+  };
 
   const recentSearches = ["M83", "The Weeknd", "Dua Lipa", "Synthwave", "Lo-fi Beats"];
   const trendingSearches = ["After Hours", "Future Nostalgia", "Starboy", "Midnight City"];
@@ -32,35 +39,46 @@ export function Search() {
       initial={{ opacity: 0, y: 20 }}
       animate={{ opacity: 1, y: 0 }}
       exit={{ opacity: 0, y: -20 }}
-      className="p-8 space-y-12"
+      className="p-4 md:p-8 space-y-8 md:space-y-12"
     >
       {/* Search Input */}
       <div className="relative max-w-2xl mx-auto">
-        <SearchIcon className="absolute left-6 top-1/2 -translate-y-1/2 text-zinc-500 w-6 h-6" />
+        <SearchIcon className="absolute left-6 top-1/2 -translate-y-1/2 text-zinc-500 w-5 h-5 md:w-6 md:h-6" />
         <input 
           type="text" 
-          placeholder="Search for artists, songs, or albums..."
+          placeholder="Search for artists, songs..."
           value={query}
           onChange={(e) => setQuery(e.target.value)}
-          className="w-full bg-zinc-900/50 border border-zinc-800/50 rounded-full py-5 pl-16 pr-8 text-lg font-medium focus:outline-none focus:ring-2 focus:ring-emerald-500/50 focus:bg-zinc-900 transition-all shadow-2xl"
+          className="w-full glass-morphism border border-white/10 rounded-full py-4 md:py-5 pl-14 md:pl-16 pr-8 text-base md:text-lg font-medium focus:outline-none focus:ring-2 focus:ring-emerald-500/50 transition-all shadow-2xl"
         />
       </div>
 
       {query ? (
-        <section className="space-y-6">
-          <h2 className="text-2xl font-display font-bold">Search Results</h2>
-          <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-5 gap-6">
+        <section className="space-y-4 md:space-y-6">
+          <div className="flex items-center justify-between">
+            <h2 className="text-xl md:text-2xl font-display font-bold">Search Results</h2>
+            <div className="flex items-center gap-3 text-[10px] md:text-xs text-zinc-500 font-medium uppercase tracking-widest">
+              <span>Results from</span>
+              <div className="flex items-center gap-2">
+                <span className="text-emerald-500">Spotify</span>
+                <span className="w-1 h-1 rounded-full bg-zinc-700" />
+                <span className="text-red-500">YouTube</span>
+              </div>
+            </div>
+          </div>
+          <div className="space-y-2 max-w-4xl mx-auto">
             {isLoading ? (
               [1, 2, 3, 4, 5].map((i) => (
-                <div key={i} className="space-y-4 animate-pulse">
-                  <div className="aspect-square bg-zinc-800 rounded-3xl" />
-                  <div className="h-4 bg-zinc-800 rounded w-3/4" />
-                </div>
+                <div key={i} className="h-16 bg-white/5 rounded-xl animate-pulse" />
               ))
             ) : (
               searchResults?.map((track: any) => (
-                <div key={track.id} className="bg-zinc-900/40 p-4 rounded-2xl border border-zinc-800/50 hover:bg-zinc-800/60 transition-all group cursor-pointer">
-                  <div className="relative aspect-square rounded-xl overflow-hidden mb-4 shadow-2xl">
+                <div 
+                  key={track.id} 
+                  onClick={() => handlePlay(track)}
+                  className="group flex items-center gap-4 p-2 md:p-3 rounded-xl hover:bg-white/5 transition-all cursor-pointer border border-transparent hover:border-white/10"
+                >
+                  <div className="relative w-12 h-12 md:w-14 md:h-14 rounded-lg overflow-hidden flex-shrink-0 shadow-lg">
                     <img 
                       src={track.cover} 
                       alt={track.title} 
@@ -68,47 +86,64 @@ export function Search() {
                       referrerPolicy="no-referrer"
                     />
                     <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
-                      <button className="w-12 h-12 bg-emerald-500 rounded-full flex items-center justify-center text-black shadow-xl translate-y-4 group-hover:translate-y-0 transition-transform">
-                        <Play className="w-6 h-6 fill-current" />
-                      </button>
+                      <Play className="w-5 h-5 text-white fill-current" />
                     </div>
                   </div>
-                  <h3 className="font-bold truncate group-hover:text-emerald-400 transition-colors">{track.title}</h3>
-                  <p className="text-sm text-zinc-500 truncate">{track.artist}</p>
+                  
+                  <div className="flex-1 min-w-0">
+                    <h3 className="text-sm md:text-base font-bold truncate group-hover:text-emerald-400 transition-colors">{track.title}</h3>
+                    <p className="text-xs md:text-sm text-zinc-500 truncate">{track.artist}</p>
+                  </div>
+
+                  <div className="flex items-center gap-2 md:gap-4 opacity-0 group-hover:opacity-100 transition-opacity">
+                    <button 
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        addToQueue(track);
+                      }}
+                      className="p-2 text-zinc-400 hover:text-white transition-colors"
+                      title="Add to Queue"
+                    >
+                      <ListPlus className="w-5 h-5" />
+                    </button>
+                    <span className="text-xs text-zinc-500 font-mono hidden sm:block">
+                      {track.duration || "3:45"}
+                    </span>
+                  </div>
                 </div>
               ))
             )}
             {!isLoading && searchResults?.length === 0 && (
-              <p className="text-zinc-500 col-span-full text-center py-12">No results found for "{query}"</p>
+              <p className="text-zinc-500 text-center py-12">No results found for "{query}"</p>
             )}
           </div>
         </section>
       ) : (
         <>
           {/* Recent & Trending */}
-          <div className="grid md:grid-cols-2 gap-12">
-            <section className="space-y-6">
+          <div className="grid md:grid-cols-2 gap-8 md:gap-12">
+            <section className="space-y-4 md:space-y-6">
               <div className="flex items-center gap-3">
                 <Clock className="w-5 h-5 text-emerald-500" />
-                <h2 className="text-xl font-display font-bold">Recent Searches</h2>
+                <h2 className="text-lg md:text-xl font-display font-bold">Recent Searches</h2>
               </div>
-              <div className="flex flex-wrap gap-3">
+              <div className="flex flex-wrap gap-2 md:gap-3">
                 {recentSearches.map((s) => (
-                  <button key={s} onClick={() => setQuery(s)} className="px-5 py-2.5 bg-zinc-900/50 border border-zinc-800/50 rounded-full text-sm font-medium hover:bg-zinc-800 transition-colors">
+                  <button key={s} onClick={() => setQuery(s)} className="px-4 md:px-5 py-2 md:py-2.5 bg-white/5 border border-white/10 rounded-full text-xs md:text-sm font-medium hover:bg-white/10 transition-colors">
                     {s}
                   </button>
                 ))}
               </div>
             </section>
 
-            <section className="space-y-6">
+            <section className="space-y-4 md:space-y-6">
               <div className="flex items-center gap-3">
                 <TrendingUp className="w-5 h-5 text-emerald-500" />
-                <h2 className="text-xl font-display font-bold">Trending Searches</h2>
+                <h2 className="text-lg md:text-xl font-display font-bold">Trending Searches</h2>
               </div>
-              <div className="flex flex-wrap gap-3">
+              <div className="flex flex-wrap gap-2 md:gap-3">
                 {trendingSearches.map((s) => (
-                  <button key={s} onClick={() => setQuery(s)} className="px-5 py-2.5 bg-zinc-900/50 border border-zinc-800/50 rounded-full text-sm font-medium hover:bg-zinc-800 transition-colors">
+                  <button key={s} onClick={() => setQuery(s)} className="px-4 md:px-5 py-2 md:py-2.5 bg-white/5 border border-white/10 rounded-full text-xs md:text-sm font-medium hover:bg-white/10 transition-colors">
                     {s}
                   </button>
                 ))}
@@ -117,16 +152,16 @@ export function Search() {
           </div>
 
           {/* Browse All */}
-          <section className="space-y-6">
+          <section className="space-y-4 md:space-y-6">
             <div className="flex items-center gap-3">
               <Grid className="w-5 h-5 text-emerald-500" />
-              <h2 className="text-xl font-display font-bold">Browse All</h2>
+              <h2 className="text-lg md:text-xl font-display font-bold">Browse All</h2>
             </div>
-            <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-4">
+            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-3 md:gap-4">
               {categories.map((cat) => (
-                <button key={cat.name} className={`${cat.color} h-32 rounded-2xl p-6 relative overflow-hidden group hover:scale-105 transition-all shadow-lg text-left`}>
-                  <span className="text-xl font-bold text-white relative z-10">{cat.name}</span>
-                  <div className="absolute -right-4 -bottom-4 w-20 h-20 bg-white/20 rounded-full blur-2xl group-hover:scale-150 transition-transform" />
+                <button key={cat.name} className={`${cat.color} h-24 md:h-32 rounded-2xl p-4 md:p-6 relative overflow-hidden group hover:scale-105 transition-all shadow-lg text-left border border-white/10`}>
+                  <span className="text-base md:text-xl font-bold text-white relative z-10">{cat.name}</span>
+                  <div className="absolute -right-4 -bottom-4 w-16 h-16 md:w-20 md:h-20 bg-white/20 rounded-full blur-2xl group-hover:scale-150 transition-transform" />
                 </button>
               ))}
             </div>

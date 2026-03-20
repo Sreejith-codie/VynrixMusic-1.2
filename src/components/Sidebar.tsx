@@ -1,15 +1,31 @@
 import { Link, useLocation } from "wouter";
-import { Home, Search, Library, PlusSquare, Heart, Music2, Disc, LayoutGrid, ListMusic, Mic2, Radio } from "lucide-react";
+import { Home, Search, Library, PlusSquare, Heart, Music2, Disc, LayoutGrid, ListMusic, Mic2, Radio, Music, User, Info, LogIn } from "lucide-react";
 import { cn } from "@/src/lib/utils";
 import { motion } from "motion/react";
+import { useSpotify, useAuth } from "../App";
+import { auth } from "../firebase";
+import { GoogleAuthProvider, signInWithPopup } from "firebase/auth";
 
 export function Sidebar() {
   const [location] = useLocation();
+  const { spotifyToken, connectSpotify, isConfigured: isSpotifyConfigured } = useSpotify();
+  const { user } = useAuth();
+
+  const handleLogin = async () => {
+    try {
+      const provider = new GoogleAuthProvider();
+      await signInWithPopup(auth, provider);
+    } catch (error) {
+      console.error("Login failed", error);
+    }
+  };
 
   const navItems = [
     { href: "/", icon: Home, label: "Home" },
     { href: "/search", icon: Search, label: "Search" },
     { href: "/library", icon: Library, label: "Your Library" },
+    { href: "/profile", icon: User, label: "Profile" },
+    { href: "/about", icon: Info, label: "About" },
   ];
 
   const playlists = [
@@ -23,7 +39,7 @@ export function Sidebar() {
   ];
 
   return (
-    <aside className="w-72 bg-black flex flex-col border-r border-zinc-900/50 h-full relative z-50">
+    <aside className="w-72 glass border-r border-white/5 h-full relative z-50 flex flex-col">
       {/* Logo Section */}
       <div className="p-8 flex items-center gap-4 group cursor-pointer">
         <motion.div 
@@ -62,6 +78,26 @@ export function Sidebar() {
             <span className="font-bold text-sm tracking-tight">{item.label}</span>
           </Link>
         ))}
+
+        {isSpotifyConfigured && !spotifyToken && (
+          <button 
+            onClick={connectSpotify}
+            className="w-full flex items-center gap-4 px-4 py-3 text-[#1DB954] hover:text-white hover:bg-[#1DB954]/10 rounded-xl transition-all group"
+          >
+            <Music className="w-5 h-5 group-hover:scale-110 transition-transform" />
+            <span className="font-bold text-sm tracking-tight">Connect Spotify</span>
+          </button>
+        )}
+
+        {!user && (
+          <button 
+            onClick={handleLogin}
+            className="w-full flex items-center gap-4 px-4 py-3 text-blue-500 hover:text-white hover:bg-blue-500/10 rounded-xl transition-all group"
+          >
+            <LogIn className="w-5 h-5 group-hover:scale-110 transition-transform" />
+            <span className="font-bold text-sm tracking-tight">Sign In</span>
+          </button>
+        )}
       </nav>
 
       {/* Playlists Section */}
