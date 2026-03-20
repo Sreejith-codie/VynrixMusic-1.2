@@ -1,0 +1,24 @@
+{
+  "entities": {
+    "LikedSong": {
+      "title": "Liked Song",
+      "description": "A song liked by a user",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string", "description": "The song's unique ID" },
+        "title": { "type": "string", "description": "The song's title" },
+        "artist": { "type": "string", "description": "The song's artist" },
+        "cover": { "type": "string", "description": "The song's cover image URL" },
+        "userId": { "type": "string", "description": "The user's unique ID" },
+        "likedAt": { "type": "number", "description": "The timestamp when the song was liked" }
+      },
+      "required": ["id", "title", "artist", "cover", "userId", "likedAt"]
+    }
+  },
+  "firestore": {
+    "/users/{userId}/likedSongs/{songId}": {
+      "schema": "LikedSong",
+      "description": "Collection of songs liked by a user"
+    }
+  }
+}

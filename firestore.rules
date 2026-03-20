@@ -1,0 +1,56 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    // ===============================================================
+    // Assumed Data Model
+    // ===============================================================
+    //
+    // Collection: users/{userId}/likedSongs
+    // Document ID: {songId}
+    // Fields:
+    //   - id: string (required) - Song ID
+    //   - title: string (required) - Song title
+    //   - artist: string (required) - Song artist
+    //   - cover: string (required) - Song cover URL
+    //   - userId: string (required) - User ID
+    //   - likedAt: number (required) - Timestamp
+    //
+    // ===============================================================
+
+    // ===============================================================
+    // Helper Functions
+    // ===============================================================
+    function isAuthenticated() {
+      return request.auth != null;
+    }
+
+    function isOwner(userId) {
+      return isAuthenticated() && request.auth.uid == userId;
+    }
+
+    function isValidLikedSong(data) {
+      return data.keys().hasAll(['id', 'title', 'artist', 'cover', 'userId', 'likedAt']) &&
+             data.id is string && data.id.size() > 0 && data.id.size() < 100 &&
+             data.title is string && data.title.size() > 0 && data.title.size() < 200 &&
+             data.artist is string && data.artist.size() > 0 && data.artist.size() < 200 &&
+             data.cover is string && data.cover.size() > 0 && data.cover.size() < 500 &&
+             data.userId == request.auth.uid &&
+             data.likedAt is number;
+    }
+
+    // ===============================================================
+    // Rules
+    // ===============================================================
+    match /users/{userId}/likedSongs/{songId} {
+      allow read: if isOwner(userId);
+      allow create: if isOwner(userId) && isValidLikedSong(request.resource.data);
+      allow update: if false; // Liked songs are typically not updated, just deleted and recreated
+      allow delete: if isOwner(userId);
+    }
+    
+    // Default deny
+    match /{document=**} {
+      allow read, write: if false;
+    }
+  }
+}
